@@ -20,6 +20,11 @@ let query = '';
 axios.defaults.baseURL = 'https://pixabay.com';
 const url = `/api/`;
 
+let modal = new simpleLightbox('ul.gallery a', {
+  captionDelay: 250,
+  captionsData: 'alt',
+});
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
   query = input.value.trim();
@@ -29,6 +34,8 @@ form.addEventListener('submit', async event => {
   if (query === '') return;
   loader.style.display = 'block';
   input.value = '';
+
+  page = 1;
 
   try {
     const response = await axios.get(url, {
@@ -73,11 +80,6 @@ form.addEventListener('submit', async event => {
 
     gallery.innerHTML = imgs;
 
-    let modal = new simpleLightbox('ul.gallery a', {
-      captionDelay: 250,
-      captionsData: 'alt',
-    });
-
     gallery.insertAdjacentHTML('beforeend', imgs);
     if (data.hits.length >= perPage) {
       loadMoreBtn.style.display = 'block';
@@ -87,22 +89,15 @@ form.addEventListener('submit', async event => {
   } catch (error) {
     loader.style.display = 'none';
     iziToast.error({
-      message: error.message,
+      message: error.message || 'Error fetching data',
       color: 'red',
       position: 'topRight',
     });
-    console.error('Error fetching data:', error);
     loadMoreBtn.style.display = 'none';
   }
 });
 
 loadMoreBtn.addEventListener('click', async () => {
-  let modal = new simpleLightbox('ul.gallery a', {
-    captionDelay: 250,
-    captionsData: 'alt',
-  });
-
-  console.log(query);
   page += 1;
 
   try {
@@ -155,11 +150,10 @@ loadMoreBtn.addEventListener('click', async () => {
   } catch (error) {
     loader.style.display = 'none';
     iziToast.error({
-      message: error.message,
+      message: error.message || 'Error fetching data',
       color: 'red',
       position: 'topRight',
     });
-    console.error('Error fetching more data:', error);
   }
 });
 
