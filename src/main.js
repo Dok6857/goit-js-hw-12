@@ -55,45 +55,25 @@ form.addEventListener('submit', async event => {
         position: 'topRight',
       });
     }
-    const imgs = data.hits.reduce(
-      (
-        html,
-        { webformatURL, largeImageURL, tags, likes, views, comments, downloads }
-      ) =>
-        html +
-        `<li class="gallery-item">
-          <a class="gallery-link" href="${largeImageURL}">
-           <img class="gallery-image"
-           src="${webformatURL}"
-           alt="${tags}"
-           />
-          </a>          
-          <div class="description">
-          <p>Likes:<span>${likes}</span></p>
-          <p>Views:<span>${views}</span></p>
-          <p>Comments:<span>${comments}</span></p>
-          <p>Downloads:<span>${downloads}</span></p>
-          </div> 
-        </li>`,
-      ''
-    );
 
-    gallery.innerHTML = imgs;
+    renderImages(data.hits);
 
-    gallery.insertAdjacentHTML('beforeend', imgs);
-    if (data.hits.length >= perPage) {
-      loadMoreBtn.style.display = 'block';
+    if (data.totalHits <= perPage * page) {
+      hideLoadMoreButton();
+      iziToast.show({
+        message: "You've reached the end of search results.",
+        theme: 'dark',
+        backgroundColor: '#EF4040',
+        titleColor: 'white',
+        position: 'topRight',
+      });
+    } else {
+      showLoadMoreButton();
     }
 
     modal.refresh();
   } catch (error) {
-    loader.style.display = 'none';
-    iziToast.error({
-      message: error.message || 'Error fetching data',
-      color: 'red',
-      position: 'topRight',
-    });
-    loadMoreBtn.style.display = 'none';
+    handleFetchError(error);
   }
 });
 
@@ -109,9 +89,9 @@ loadMoreBtn.addEventListener('click', async () => {
     const data = response.data;
 
     if (data.totalHits <= perPage * page) {
-      loadMoreBtn.style.display = 'none';
-      throw iziToast.show({
-        message: "We're sorry, but you've reached the end of search results.",
+      hideLoadMoreButton();
+      iziToast.show({
+        message: "You've reached the end of search results.",
         theme: 'dark',
         backgroundColor: '#EF4040',
         titleColor: 'white',
@@ -119,13 +99,23 @@ loadMoreBtn.addEventListener('click', async () => {
       });
     }
 
-    const imgs = data.hits.reduce(
-      (
-        html,
-        { webformatURL, largeImageURL, tags, likes, views, comments, downloads }
-      ) =>
-        html +
-        `<li class="gallery-item">
+    renderImages(data.hits);
+    scrollByTwoGalleryItems();
+
+    modal.refresh();
+  } catch (error) {
+    handleFetchError(error);
+  }
+});
+
+const renderImages = images => {
+  const html = images.reduce(
+    (
+      html,
+      { webformatURL, largeImageURL, tags, likes, views, comments, downloads }
+    ) =>
+      html +
+      `<li class="gallery-item">
           <a class="gallery-link" href="${largeImageURL}">
            <img class="gallery-image"
            src="${webformatURL}"
@@ -139,25 +129,21 @@ loadMoreBtn.addEventListener('click', async () => {
           <p>Downloads:<span>${downloads}</span></p>
           </div> 
         </li>`,
-      ''
-    );
+    ''
+  );
 
-    gallery.insertAdjacentHTML('beforeend', imgs);
+  gallery.insertAdjacentHTML('beforeend', html);
+};
 
-    scrollToNextGroup();
+const hideLoadMoreButton = () => {
+  loadMoreBtn.style.display = 'none';
+};
 
-    modal.refresh();
-  } catch (error) {
-    loader.style.display = 'none';
-    iziToast.error({
-      message: error.message || 'Error fetching data',
-      color: 'red',
-      position: 'topRight',
-    });
-  }
-});
+const showLoadMoreButton = () => {
+  loadMoreBtn.style.display = 'block';
+};
 
-const scrollToNextGroup = () => {
+const scrollByTwoGalleryItems = () => {
   const firstGalleryItem = document.querySelector('.gallery-item');
   const galleryItemHeight = firstGalleryItem.getBoundingClientRect().height;
 
@@ -177,3 +163,12 @@ const searchParams = query =>
     page: page,
     per_page: perPage,
   });
+
+const handleFetchError = error => {
+  loader.style.display = 'none';
+  iziToast.error({
+    message: error.message || 'Error fetching data',
+    color: 'red',
+    position: 'topRight',
+  });
+};
